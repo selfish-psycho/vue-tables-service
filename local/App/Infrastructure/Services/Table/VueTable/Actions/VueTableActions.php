@@ -35,7 +35,7 @@ class VueTableActions implements ActionsInterface
     }
 
     /**
-     * Метод подключает файлы стилей из директории '/local/App/Infrastructure/Services/Table/VueTable/Assets/styles'
+     * Метод подключает файлы стилей из директории '/include/services/VueTable/styles'
      * @return $this
      */
     public function includeStyles(): self
