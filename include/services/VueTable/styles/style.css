@@ -1,0 +1,96 @@
+table {
+    border: 2px solid black;
+    border-collapse: collapse;
+}
+
+.headerAboveRow, .headerRow {
+    border-bottom: 2px solid black;
+}
+
+.row {
+    border-bottom: 1pt solid black;
+}
+
+td, th {
+    border-right: 2px solid black;
+    padding: 5px;
+    /*vertical-align: top;*/
+}
+
+/*region toggler*/
+
+.toggler-wrapper {
+    /* border: 0px; */
+    display: block;
+    width: 45px;
+    height: 25px;
+    cursor: pointer;
+    position: relative;
+}
+
+.toggler-wrapper input[type="checkbox"] {
+    border: 0px;
+    display: none;
+}
+
+.toggler-wrapper input[type="checkbox"]:checked+.toggler-slider {
+    background-color: #1faee9;
+}
+
+.toggler-wrapper .toggler-slider {
+    background-color: #cecece;
+    position: absolute;
+    border-radius: 100px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-transition: all 300ms ease;
+    transition: all 300ms ease;
+}
+
+.toggler-wrapper .toggler-knob {
+    position: absolute;
+    -webkit-transition: all 300ms ease;
+    transition: all 300ms ease;
+}
+
+
+.toggler-wrapper.styler input[type="checkbox"]:checked+.toggler-slider .toggler-knob {
+    left: calc(100% - 19px - 3px);
+}
+
+.toggler-wrapper.styler .toggler-knob {
+    width: calc(25px - 6px);
+    height: calc(25px - 6px);
+    border-radius: 50%;
+    left: 3px;
+    top: 3px;
+    background-color: #ffffff;
+}
+/*endregion toggler*/
+
+/*region button*/
+.export {
+    border: 3px solid rgba(0, 0, 0, 0);
+    border-radius: 16px;
+    width: 140px;
+    background-color: #2fc6f6;
+    font-size: 14px;
+    color: white;
+    height: 42px;
+    padding: 6px;
+    margin-bottom: 5pt
+}
+
+.transition {
+    transition: 1s;
+}
+
+.export:hover {
+    cursor: pointer;
+    border: 3px solid #2fc6f6;
+    background-color: white;
+    color: #2fc6f6;
+}
+/*endregion button*/
