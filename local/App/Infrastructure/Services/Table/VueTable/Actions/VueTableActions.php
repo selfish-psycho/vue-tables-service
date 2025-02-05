@@ -27,22 +27,26 @@ class VueTableActions implements ActionsInterface
         $this->service->repository()->getVueScript($appId);
 
         //Определяем источник данных
-        foreach ($dataClass->getTableRows() as $row) {
-            $this->service->repository()->addRow($row);
+        try {
+            foreach ($dataClass->getTableRows() as $row) {
+                $this->service->repository()->addRow($row);
+            }
+        } catch (\Exception $e) {
+            $this->service->repository()->throwError($e->getMessage());
         }
 
         return $this;
     }
 
     /**
-     * Метод подключает файлы стилей из директории '/include/services/VueTable/styles'
+     * Метод подключает файлы стилей из директории '/local/App/Infrastructure/Services/Table/VueTable/Assets/styles'
      * @return $this
      */
     public function includeStyles(): self
     {
         $this->validateInit();
 
-        $stylesPath = '/include/services/VueTable/styles';
+        $stylesPath = '/local/css/services/VueTable/styles';
         $path = Loader::getDocumentRoot() . $stylesPath;
 
         if (!is_dir(Loader::getDocumentRoot() . $stylesPath)) {
