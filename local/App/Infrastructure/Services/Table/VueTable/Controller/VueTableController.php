@@ -2,12 +2,12 @@
 
 namespace App\Infrastructure\Services\Table\VueTable\Controller;
 
+use App\Infrastructure\Services\Table\VueTable\Facades\VueTableExcelExport;
 use Bitrix\Crm\Service\Container;
 use Bitrix\Main\Engine\Controller;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Web\Json;
 use CCrmOwnerType;
-use Exception;
 
 class VueTableController extends Controller
 {
@@ -29,7 +29,7 @@ class VueTableController extends Controller
 
                 $item->set($field, $value)->save();
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return Json::encode([
                 'success' => false,
                 'data' => $e->getMessage()
@@ -40,5 +40,17 @@ class VueTableController extends Controller
             'success' => true,
             'data' => $cell
         ]);
+    }
+
+    public static function export(array $data)
+    {
+        return VueTableExcelExport::export($data);
+    }
+
+    public static function delete(array $data)
+    {
+        $filePath = $data['path'] ?: '';
+
+        return VueTableExcelExport::deleteExcel($filePath);
     }
 }

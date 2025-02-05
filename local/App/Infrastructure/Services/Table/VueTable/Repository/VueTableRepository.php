@@ -2,10 +2,12 @@
 
 namespace App\Infrastructure\Services\Table\VueTable\Repository;
 
+//use App\Infrastructure\Contracts\Tables\ComponentClassInterface;
 use App\Infrastructure\Contracts\Tables\RepositoryInterface;
+use Bitrix\Main\Application;
 use Bitrix\Main\LoaderException;
+use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
-use CMain;
 use Exception;
 use InvalidArgumentException;
 
@@ -19,14 +21,26 @@ class VueTableRepository implements RepositoryInterface
     {
         ob_start();
         ?>
-        <div>
+        <div id="vue-content">
+            <div
+                    class="loader"
+                    v-if="isLoading"
+            >
+                <div class="circle"></div>
+                <div class="circle"></div>
+                <div class="circle"></div>
+                <div class="shadow"></div>
+                <div class="shadow"></div>
+                <div class="shadow"></div>
+                <span>Загрузка</span>
+            </div>
             <input
                     type='submit'
                     class='transition export'
                     @click="excelExport"
                     value="Экспорт в Excel"
             >
-            <table>
+            <table class="vue-report">
                 <thead>
                 <tr
                         class="headerAboveRow"
@@ -99,7 +113,6 @@ class VueTableRepository implements RepositoryInterface
                             <span class="toggler-slider">
                                 <span class="toggler-knob">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg>
-<!--                                    TODO: Брать изображение из UI Extension Icons, а не по ссылке-->
                                 </span>
                             </span>
                         </label>
@@ -460,35 +473,26 @@ class VueTableRepository implements RepositoryInterface
                                         data: JSON.stringify(editedCell),
                                         success: function (response) {
                                             if (response.success) {
-                                                BX.UI.Notification.Center.notify({
-                                                    content: "Изменения успено сохранены",
-                                                    autoHideDelay: 2000
-                                                });
+                                                App.notify("Изменения успено сохранены");
                                             } else {
-                                                BX.UI.Notification.Center.notify({
-                                                    content: "Что-то пошло не так",
-                                                    autoHideDelay: 2000
-                                                });
-                                                console.log(response)
+                                                App.notify("Что-то пошло не так");
                                             }
                                         },
                                         error: function (jqXHR, exception) {
-                                            console.log(jqXHR)
-
                                             if (jqXHR.status === 0) {
-                                                alert('Not connect. Verify Network.');
+                                                console.log('Not connect. Verify Network.');
                                             } else if (jqXHR.status == 404) {
-                                                alert('Requested page not found (404).');
+                                                console.log('Requested page not found (404).');
                                             } else if (jqXHR.status == 500) {
-                                                alert('Internal Server Error (500).');
+                                                console.log('Internal Server Error (500).');
                                             } else if (exception === 'parsererror') {
-                                                alert('Requested JSON parse failed.');
+                                                console.log('Requested JSON parse failed.');
                                             } else if (exception === 'timeout') {
-                                                alert('Time out error.');
+                                                console.log('Time out error.');
                                             } else if (exception === 'abort') {
-                                                alert('Ajax request aborted.');
+                                                console.log('Ajax request aborted.');
                                             } else {
-                                                alert('Uncaught Error. ' + jqXHR.responseText);
+                                                console.log('Uncaught Error. ' + jqXHR.responseText);
                                             }
                                         }
                                     })
@@ -499,7 +503,69 @@ class VueTableRepository implements RepositoryInterface
                         }
                     },
                     excelExport() {
-                        //TODO: Реализовать AJAX-запрос на генерацию excel файла
+                        $.ajax({
+                            type: "POST",
+                            url: "/api/v1/vue/table/export",
+                            dataType: "json",
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                headersAbove: this.headersAbove,
+                                headers: this.headers,
+                                rows: this.rows
+                            }),
+                            success: function (response) {
+                                if (response.success) {
+                                    App.notify("Cкачивание началось");
+                                    window.location.replace(response.downloadPath);
+
+                                    //Ждём и удаляем файл с сервера, чтобы не заспамить
+                                    setTimeout(() => {
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "/api/v1/vue/table/delete",
+                                            dataType: "json",
+                                            contentType: "application/json",
+                                            data: JSON.stringify({
+                                                path: response.fullPath
+                                            }),
+                                            success: function (response) {
+                                                console.log(response)
+                                            }
+                                        })
+                                    }, 5000);
+                                } else {
+                                    App.notify("Что-то пошло не так: " + response?.error);
+                                }
+                            },
+                            error: function (jqXHR, exception) {
+                                if (jqXHR.status === 0) {
+                                    console.log('Not connect. Verify Network.');
+                                } else if (jqXHR.status == 404) {
+                                    console.log('Requested page not found (404).');
+                                } else if (jqXHR.status == 500) {
+                                    console.log('Internal Server Error (500).');
+                                } else if (exception === 'parsererror') {
+                                    console.log('Requested JSON parse failed.');
+                                } else if (exception === 'timeout') {
+                                    console.log('Time out error.');
+                                } else if (exception === 'abort') {
+                                    console.log('Ajax request aborted.');
+                                } else {
+                                    console.log('Uncaught Error. ' + jqXHR.responseText);
+                                }
+                            }
+                        })
+                    },
+                    notify(message) {
+                        BX.UI.Notification.Center.notify({
+                            content: message,
+                            autoHideDelay: 2000
+                        });
+                    }
+                },
+                computed: {
+                    isLoading() {
+                        return this.rows.length < 1;
                     }
                 }
             })
@@ -533,16 +599,25 @@ class VueTableRepository implements RepositoryInterface
 
     /**
      * Метод подключает Vue-приложению файл переданного стиля
-     * @param string $path путь к css файлу относительно корня проекта
+     * @param string $path путь к css файлу относительно папки local
      * @return void
      */
     public function addStyle(string $path): void
     {
-        if (!preg_match('/^\/include/', $path)) {
-            throw new InvalidArgumentException('Путь до стиля должен начинаться с \'/include\'');
+        //validate path
+        if (!str_starts_with($path, '/')) {
+            $path = '/' . $path;
         }
 
-        (new CMain())->SetAdditionalCSS($path);
+        if (!preg_match('/^\/local/', $path)) {
+            throw new InvalidArgumentException('Путь до стиля должен начинаться с \'/local\'');
+        }
+        ?>
+
+        <link rel="stylesheet" type="text/css" href="<?=$path?>" />
+
+        <?php
+//        (new \CMain())->SetAdditionalCSS($path); //НЕ РАБОТАЕТ ПОЧЕМУ-ТО
     }
 
     /**
@@ -558,5 +633,18 @@ class VueTableRepository implements RepositoryInterface
         <?php
 
         return $this;
+    }
+
+    /**
+     * @param string $message
+     * @return void
+     */
+    public function throwError(string $message): void
+    {
+        ?>
+        <script>
+            $("#vue-content").replaceWith("<h1>Ошибка при генерации отчёта: <?=$message?></h1>");
+        </script>
+        <?php
     }
 }

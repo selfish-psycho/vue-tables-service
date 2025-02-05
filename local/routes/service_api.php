@@ -13,6 +13,12 @@ return function (RoutingConfigurator $routes) {
             $routes->post('table/update', function (HttpRequest $request) {
                 return VueTableController::updateField($request->getJsonList()->getValues());
             });
+            $routes->post('table/export', function (HttpRequest $request) {
+                return VueTableController::export($request->getJsonList()->getValues());
+            });
+            $routes->post('table/delete', function (HttpRequest $request) {
+                return VueTableController::delete($request->getJsonList()->getValues());
+            });
         })
     ;
     //endregion VueTableService
