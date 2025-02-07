@@ -2,13 +2,10 @@
 
 namespace App\Infrastructure\Services\Table\VueTable\Repository;
 
-//use App\Infrastructure\Contracts\Tables\ComponentClassInterface;
 use App\Infrastructure\Contracts\Tables\RepositoryInterface;
-use Bitrix\Main\Application;
+use Bitrix\Main\Loader;
 use Bitrix\Main\LoaderException;
-use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
-use Exception;
 use InvalidArgumentException;
 
 class VueTableRepository implements RepositoryInterface
@@ -39,8 +36,12 @@ class VueTableRepository implements RepositoryInterface
                     class='transition export'
                     @click="excelExport"
                     value="Экспорт в Excel"
+                    v-if="!isLoading"
             >
-            <table class="vue-report">
+            <table
+                    class="vue-report"
+                    v-if="!isLoading"
+            >
                 <thead>
                 <tr
                         class="headerAboveRow"
@@ -128,11 +129,12 @@ class VueTableRepository implements RepositoryInterface
     /**
      * Метод получает скрипт Vue-приложения
      * @param string $appId
+     * @param string $dataClass
+     * @param array $params
      * @return void
      * @throws LoaderException
-     * @throws Exception
      */
-    public function getVueScript(string $appId): void
+    public function getVueScript(string $appId, string $dataClass, array $params = []): void
     {
         Extension::load('jquery');
         Extension::load('ui.vue');
@@ -182,69 +184,11 @@ class VueTableRepository implements RepositoryInterface
                         //         index: 1
                         //     }
                         // ]
-                    ]
+                    ],
+                    dataClass: '<?=$dataClass?>',
+                    dataParams: JSON.parse('<?=json_encode($params)?>'),
                 },
                 template: `<?=$this->getTemplate()?>`,
-                watch: {
-                    editable: function(to, from) {
-                        if (to === true) {
-                            //Добавляем колонку для переключателей режима редактирования
-                            this.headers.unshift(
-                                {
-                                    id: 0,
-                                    index: 0,
-                                    name: 'empty',
-                                }
-                            )
-
-                            //Добавляем headerAbove для столбца переключателей при необходимости
-                            //TODO:определять уровень заголовка по уровню вложенности (имею в виду [0])
-                            if (this.headersAbove[0].length > 0) {
-                                this.headersAbove[0].unshift({
-                                    id: 0,
-                                    index: 0,
-                                    name: 'empty',
-                                    length: 1,
-                                })
-                            }
-
-                            //Заполняем созданный столбец переключателями
-                            this.rows.forEach(row => {
-                                row.unshift({
-                                    id: '',
-                                    value: '',
-                                    index: 0,
-                                    field_code: '',
-                                    entity_type_id: '',
-                                    entity_id: ''
-                                })
-                            })
-                        } else if (from === true) {
-                            //Удаляем колонку для переключателей режима редактирования
-                            let indexToRemove = this.headers.findIndex(el => el.index === 0);
-                            if (indexToRemove !== -1) {
-                                this.headers.splice(indexToRemove, 1);
-                            }
-
-                            //Удаляем headerAbove столбца переключателей при необходимости
-                            //TODO:определять уровень заголовка по уровню вложенности (имею в виду [0])
-                            if (this.headersAbove[0].length > 0) {
-                                let indexToRemove = this.headersAbove[0].findIndex(el => el.index === 0);
-                                if (indexToRemove!== -1) {
-                                    this.headersAbove[0].splice(indexToRemove, 1);
-                                }
-                            }
-
-                            //Удаляем из строк переключатели
-                            this.rows.forEach(row => {
-                                let indexToRemove = row.findIndex(el => el.index === 0);
-                                if (indexToRemove!== -1) {
-                                    row.splice(indexToRemove, 1);
-                                }
-                            })
-                        }
-                    }
-                },
                 methods: {
                     addRow(row) {
                         let newRow = [];
@@ -561,12 +505,115 @@ class VueTableRepository implements RepositoryInterface
                             content: message,
                             autoHideDelay: 2000
                         });
+                    },
+                    throwError(message) {
+                        $("#vue-content").replaceWith("<h1>Ошибка при генерации отчёта: " + message + "</h1>");
+                    },
+                    setIsEditable(isEditable) {
+                        if (isEditable === true) {
+                            //Добавляем колонку для переключателей режима редактирования
+                            this.headers.unshift(
+                                {
+                                    id: 0,
+                                    index: 0,
+                                    name: 'empty',
+                                }
+                            )
+
+                            //Добавляем headerAbove для столбца переключателей при необходимости
+                            //TODO:определять уровень заголовка по уровню вложенности (имею в виду [0])
+                            if (this.headersAbove[0].length > 0) {
+                                this.headersAbove[0].unshift({
+                                    id: 0,
+                                    index: 0,
+                                    name: 'empty',
+                                    length: 1,
+                                })
+                            }
+
+                            //Заполняем созданный столбец переключателями
+                            this.rows.forEach(row => {
+                                row.unshift({
+                                    id: '',
+                                    value: '',
+                                    index: 0,
+                                    field_code: '',
+                                    entity_type_id: '',
+                                    entity_id: ''
+                                })
+                            })
+                        } else {
+                            //Удаляем колонку для переключателей режима редактирования
+                            let indexToRemove = this.headers.findIndex(el => el.index === 0);
+                            if (indexToRemove !== -1) {
+                                this.headers.splice(indexToRemove, 1);
+                            }
+
+                            //Удаляем headerAbove столбца переключателей при необходимости
+                            //TODO:определять уровень заголовка по уровню вложенности (имею в виду [0])
+                            if (this.headersAbove[0].length > 0) {
+                                let indexToRemove = this.headersAbove[0].findIndex(el => el.index === 0);
+                                if (indexToRemove!== -1) {
+                                    this.headersAbove[0].splice(indexToRemove, 1);
+                                }
+                            }
+
+                            //Удаляем из строк переключатели
+                            this.rows.forEach(row => {
+                                let indexToRemove = row.findIndex(el => el.index === 0);
+                                if (indexToRemove!== -1) {
+                                    row.splice(indexToRemove, 1);
+                                }
+                            })
+                        }
                     }
                 },
                 computed: {
                     isLoading() {
                         return this.rows.length < 1;
                     }
+                },
+                mounted() {
+                    $.ajax({
+                        type: "POST",
+                        url: "/api/v1/vue/table/rows/get",
+                        dataType: "json",
+                        contentType: "application/json",
+                        data: JSON.stringify({
+                            'data_class': this.dataClass,
+                            'params': this.dataParams
+                        }),
+                        success: function (response) {
+                            response.forEach(function (row) {
+                                if (row.error === '') {
+                                    App.addRow(JSON.parse(row.row))
+                                } else {
+                                    App.throwError(row.error)
+                                }
+                            });
+
+                            if (App.editable) {
+                                App.setIsEditable(true)
+                            }
+                        },
+                        error: function (jqXHR, exception) {
+                            if (jqXHR.status === 0) {
+                                console.log('Not connect. Verify Network.');
+                            } else if (jqXHR.status == 404) {
+                                console.log('Requested page not found (404).');
+                            } else if (jqXHR.status == 500) {
+                                console.log('Internal Server Error (500).');
+                            } else if (exception === 'parsererror') {
+                                console.log('Requested JSON parse failed.');
+                            } else if (exception === 'timeout') {
+                                console.log('Time out error.');
+                            } else if (exception === 'abort') {
+                                console.log('Ajax request aborted.');
+                            } else {
+                                console.log('Uncaught Error. ' + jqXHR.responseText);
+                            }
+                        }
+                    })
                 }
             })
 

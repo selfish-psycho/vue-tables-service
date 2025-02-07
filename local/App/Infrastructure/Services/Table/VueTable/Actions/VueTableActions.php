@@ -5,9 +5,11 @@ namespace App\Infrastructure\Services\Table\VueTable\Actions;
 use App\Infrastructure\Contracts\Tables\ActionsInterface;
 use App\Infrastructure\Contracts\Tables\DataClassInterface;
 use App\Infrastructure\Contracts\Tables\ServiceInterface;
+use App\Infrastructure\Enums\Table\DataClassesEnum;
 use App\Infrastructure\Enums\Table\ServicesEnums;
 use App\Infrastructure\Services\Table\TableService;
 use Bitrix\Main\Loader;
+use Exception;
 use RuntimeException;
 
 class VueTableActions implements ActionsInterface
@@ -17,29 +19,25 @@ class VueTableActions implements ActionsInterface
     /**
      * Метод определяет DOM-узел для инициализации Vue-приложения и сохраняет класс описания сбора данных для таблицы
      * @param string $appId
-     * @param DataClassInterface $dataClass
+     * @param DataClassesEnum $dataClass
+     * @param array $params
      * @return self
      */
-    public function init(string $appId, DataClassInterface $dataClass): self
+    public function init(string $appId, DataClassesEnum $dataClass, array $params = []): self
     {
         //Определяем Vue-приложение
         $this->service = TableService::create(ServicesEnums::VUE->value);
-        $this->service->repository()->getVueScript($appId);
-
-        //Определяем источник данных
-        try {
-            foreach ($dataClass->getTableRows() as $row) {
-                $this->service->repository()->addRow($row);
-            }
-        } catch (\Exception $e) {
-            $this->service->repository()->throwError($e->getMessage());
-        }
+        $this->service->repository()->getVueScript(
+            $appId,
+            base64_encode($dataClass->value),
+            $params
+        );
 
         return $this;
     }
 
     /**
-     * Метод подключает файлы стилей из директории '/local/App/Infrastructure/Services/Table/VueTable/Assets/styles'
+     * Метод подключает файлы стилей из директории '/local/css/services/VueTable/styles'
      * @return $this
      */
     public function includeStyles(): self
@@ -84,5 +82,37 @@ class VueTableActions implements ActionsInterface
         if (empty($this->service)) {
             throw new RuntimeException('Сервис не инициализирован!');
         }
+    }
+
+    /**
+     * Метод получает строки для отчёта или ошибки при получении для их последующей обработки
+     * @param string $dataClass
+     * @param array $params
+     * @return array
+     */
+    public function getRows(string $dataClass, array $params): array
+    {
+        $data = new $dataClass($params);
+        $result = [];
+
+        try {
+            if (!$data instanceof DataClassInterface) {
+                throw new RuntimeException('Неверный класс описания сбора данных!');
+            }
+
+            foreach ($data->getTableRows() as $row) {
+                $result[] = [
+                    'row' => $row,
+                    'error' => ''
+                ];
+            }
+        } catch (Exception $e) {
+            $result[] = [
+                'row' => [],
+                'error' => $e->getMessage()
+            ];
+        }
+
+        return $result;
     }
 }

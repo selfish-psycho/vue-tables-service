@@ -13,7 +13,9 @@ interface RepositoryInterface
     /**
      * JS скрипт Vue приложения
      * @param string $appId
+     * @param string $dataClass
+     * @param array $params
      * @return void
      */
-    public function getVueScript(string $appId): void;
+    public function getVueScript(string $appId, string $dataClass, array $params = []): void;
 }

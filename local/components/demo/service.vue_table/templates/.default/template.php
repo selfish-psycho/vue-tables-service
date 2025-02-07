@@ -12,19 +12,18 @@ if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
     die();
 }
 
+$appId = 'app';
+
 ?>
 
-    <div id="app"></div>
+    <div id="<?=$appId?>"></div>
 
 <?php
-
-//Определяем класс сбора информации для таблицы
-$dataClass = DataClassesEnum::DEMO->value;
 
 //Инициализируем сервис
 $service = TableService::create(ServicesEnums::VUE->value);
 $service->actions()
-    ->init('app', (new $dataClass($arResult)))
+    ->init($appId, DataClassesEnum::DEMO, $arResult)
     ->includeStyles()
     ->setEditable()
 ;

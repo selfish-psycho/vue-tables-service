@@ -5,19 +5,23 @@ use Bitrix\Main\HttpRequest;
 use Bitrix\Main\Routing\RoutingConfigurator;
 
 return function (RoutingConfigurator $routes) {
+
     //region VueTableService
     $routes
-        ->prefix('api/v1/vue')
+        ->prefix('api/v1/vue/table')
         ->name('vue_table')
         ->group(function (RoutingConfigurator $routes) {
-            $routes->post('table/update', function (HttpRequest $request) {
+            $routes->post('update', function (HttpRequest $request) {
                 return VueTableController::updateField($request->getJsonList()->getValues());
             });
-            $routes->post('table/export', function (HttpRequest $request) {
-                return VueTableController::export($request->getJsonList()->getValues());
+            $routes->post('export', function (HttpRequest $request) {
+                return VueTableController::exportExcel($request->getJsonList()->getValues());
             });
-            $routes->post('table/delete', function (HttpRequest $request) {
-                return VueTableController::delete($request->getJsonList()->getValues());
+            $routes->post('delete', function (HttpRequest $request) {
+                return VueTableController::deleteExcel($request->getJsonList()->getValues());
+            });
+            $routes->post('rows/get', function (HttpRequest $request) {
+                return VueTableController::getRows($request->getJsonList()->getValues());
             });
         })
     ;

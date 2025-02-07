@@ -22,6 +22,10 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class VueTableExcelExport
 {
+    /**
+     * Массив стилей таблицы по умолчанию
+     * @var array
+     */
     private static array $style = [
         //Шрифт
         'font' => [
@@ -41,7 +45,13 @@ class VueTableExcelExport
         ],
     ];
 
-    public static function export(array $data)
+    /**
+     * Метод создаёт Excel файл по переданным данным и возвращает пути для скачивания и удаления файла
+     * @param array $data
+     * @return string JSON
+     * @throws ArgumentException|Exception
+     */
+    public static function export(array $data): string
     {
         //region Создание файла xlsx
 
